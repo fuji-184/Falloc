@@ -48,13 +48,13 @@ impl HeapArena {
     }
 
     #[inline(always)]
-    pub fn alloc<T>(&self, val: T) -> &T {
+    pub fn alloc<'lifetime_arena, T>(&'lifetime_arena self, val: T) -> &'lifetime_arena T {
         let ptr = self.inner_alloc(val);
         unsafe { &*ptr }
     }
 
     #[inline(always)]
-    pub fn alloc_mut<T>(&self, val: T) -> &mut T {
+    pub fn alloc_mut<'lifetime_arena, T>(&'lifetime_arena self, val: T) -> &'lifetime_arena mut T {
         let ptr = self.inner_alloc(val);
         unsafe { &mut *ptr }
     }
