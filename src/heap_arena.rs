@@ -1,4 +1,3 @@
-#![feature(allocator_api)]
 
 pub struct HeapArena {
     val: std::ptr::NonNull<u8>,
@@ -90,16 +89,17 @@ unsafe impl std::alloc::Allocator for &HeapArena {
 
             let handle_addr = (*handle) as usize;
             let aligned_addr = (handle_addr + (align - 1)) & !(align - 1);
-            let ptr = aligned_addr as *mut u8;
-            let next = ptr.add(size);
-            debug_assert!(next <= self.end, "arena is out of memory");
-            *handle = next;
+            let next = aligned_addr + size;
+            if next > self.end as usize {
+              panic!("arena is out of memory")
+            }
+            *handle = next as *mut u8;
 
             let offset = aligned_addr - self.val.as_ptr() as usize;
             let ptr = self.val.as_ptr().add(offset);
 
             return Ok(std::ptr::NonNull::new_unchecked(
-                std::slice::from_raw_parts_mut(ptr, size),
+                std::ptr::slice_from_raw_parts_mut(ptr, size),
             ));
         }
     }
