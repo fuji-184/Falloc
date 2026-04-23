@@ -32,7 +32,7 @@ impl HeapArena {
         unsafe {
             let handle = self.handle.get();
             let align = std::mem::align_of::<T>();
-            //let size = std::mem::size_of::<T>();
+            let size = std::mem::size_of::<T>();
 
             let handle_addr = (*handle) as usize;
             let aligned_addr = (handle_addr + (align - 1)) & !(align - 1);
