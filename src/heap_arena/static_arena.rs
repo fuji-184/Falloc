@@ -1,12 +1,12 @@
 
-pub struct HeapArena {
+pub struct StaticHeapArena {
     val: std::ptr::NonNull<u8>,
     handle: std::cell::UnsafeCell<*mut u8>,
     end: *mut u8,
     layout: std::alloc::Layout,
 }
 
-impl HeapArena {
+impl StaticHeapArena {
     #[inline(always)]
     pub fn new(size: usize) -> Self {
         unsafe {
@@ -69,7 +69,7 @@ impl HeapArena {
     }
 }
 
-impl Drop for HeapArena {
+impl Drop for StaticHeapArena {
     #[inline(always)]
     fn drop(&mut self) {
         unsafe {
@@ -78,7 +78,7 @@ impl Drop for HeapArena {
     }
 }
 
-unsafe impl std::alloc::Allocator for &HeapArena {
+unsafe impl std::alloc::Allocator for &StaticHeapArena {
     #[inline(always)]
     fn allocate(
         &self,
