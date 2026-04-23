@@ -35,7 +35,6 @@ impl DynamicHeapArena {
     }
     
     unsafe fn grows(&self, min_size: usize) {
-        println!("grow");
         let head = unsafe { &mut *self.head.get() };
         let new_size = min_size.max(head.layout.size() * 2);
         let layout = std::alloc::Layout::from_size_align(new_size, 8).unwrap();
