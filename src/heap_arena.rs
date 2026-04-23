@@ -36,12 +36,14 @@ impl HeapArena {
 
             let handle_addr = (*handle) as usize;
             let aligned_addr = (handle_addr + (align - 1)) & !(align - 1);
-            let ptr = aligned_addr as *mut T;
-            let next = ptr.add(1) as *mut u8;
-            debug_assert!(next <= self.end, "arena is out of memory");
+            let next = aligned_addr + size;
+            if next > self.end as usize {
+              panic!("arena is out of memory")
+            }
 
+            let ptr = aligned_addr as *mut T;
             ptr.write(val);
-            *handle = next;
+            *handle = next as *mut u8;
             ptr
         }
     }
