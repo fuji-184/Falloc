@@ -61,7 +61,7 @@ impl HeapArena {
     }
 
     #[inline(always)]
-    pub fn reset(&self) {
+    pub fn reset(&mut self) {
         let handle = self.handle.get();
         unsafe {
             *handle = self.val.as_ptr();
