@@ -33,7 +33,8 @@ impl DynamicHeapArena {
             }
         
     }
-    
+
+    #[inline(always)]
     unsafe fn grows(&self, min_size: usize) {
         let head = unsafe { &mut *self.head.get() };
         let new_size = min_size.max(head.layout.size() * 2);
