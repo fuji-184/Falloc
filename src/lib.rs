@@ -6,3 +6,5 @@ pub mod heap_arena;
 mod stack_arena;
 
 pub use stack_arena::StackArena;
+
+pub mod heap_pool;
