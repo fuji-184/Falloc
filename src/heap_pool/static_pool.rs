@@ -11,11 +11,15 @@ pub struct StaticPoolAllocator {
 }
 
 impl StaticPoolAllocator {
-    pub fn new(num_blocks: usize, block_size: usize) -> Self {
+    pub fn new(num_blocks: usize, block_size: usize, align_multiply: usize) -> Self {
+        if align_multiply == 0 {
+            panic!("Align multiply must be > 0");
+        }
+        
         let block_size = block_size.max(std::mem::size_of::<Block>());
         let layout = std::alloc::Layout::from_size_align(
             num_blocks * block_size,
-            std::mem::align_of::<Block>()
+            std::mem::align_of::<Block>() * align_multiply
         ).expect("Error in creating layout in fn new -> PoolAllocator");
         
         // SAFETY: the layout is valid, because if not it will trigger panic
