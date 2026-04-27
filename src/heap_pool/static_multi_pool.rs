@@ -1,3 +1,4 @@
+use crate::Error;
 
 pub struct Block {
     next: Option<std::ptr::NonNull<Block>>
@@ -16,12 +17,10 @@ fn align_up(size: usize, align: usize) -> usize {
 }
 
 impl<const N: usize> StaticMultiPoolAlloc<N> {
-    pub fn new(num_blocks: [usize; N], block_size: [usize; N], align_multiply: [usize; N]) -> Self {
-        _ = align_multiply.map(|val| {
-            if val == 0 {
-                panic!("Align multiply must be > 0");
-            }
-        });
+    pub fn new(num_blocks: [usize; N], block_size: [usize; N], align_multiply: [usize; N]) -> Result<Self, Error> {
+        if align_multiply.iter().any(|val| *val == 0) {
+          return Err(Error::InvalidAlignment("Align multiply must be > 0"));
+        }
         let block_align = std::mem::align_of::<Block>();
         let aligns: [usize; N] = align_multiply.map(|val| val * block_align);
         
@@ -31,17 +30,18 @@ impl<const N: usize> StaticMultiPoolAlloc<N> {
             align_up(size, block_align) 
         });
         
-        let layout: [std::alloc::Layout; N] = std::array::from_fn(|i| std::alloc::Layout::from_size_align(
-            num_blocks[i] * block_size[i],
+        let layout: [std::alloc::Layout; N] = std::array::try_from_fn(|i| std::alloc::Layout::from_size_align(
+            num_blocks[i].checked_mul(block_size[i])
+                .ok_or(Error::IntegerOverflow("Integer overflow, each num block * block size must fit within usize, because it will make the layout incorrect due to wrap around"))?,
             aligns[i]
-        ).expect("Error in creating layout in fn new -> PoolAllocator"));
+        ).map_err(|err| Error::LayoutError(err) )
+        )?;
         
         // SAFETY: the layout is valid, because if not it will trigger panic
-        
-        let starts: [std::ptr::NonNull<u8>; N] = std::array::from_fn(|i| {
+        let starts: [std::ptr::NonNull<u8>; N] = std::array::try_from_fn(|i| {
         
         let start = unsafe { std::alloc::alloc(layout[i]) };
-        let start_ptr = std::ptr::NonNull::new(start).expect("Error OOM in fn new -> PoolAllocator");
+        let start_ptr = std::ptr::NonNull::new(start).ok_or(Error::OutOfMemory)?;
         
         unsafe {
             for j in 0..num_blocks[i] {
@@ -56,21 +56,21 @@ impl<const N: usize> StaticMultiPoolAlloc<N> {
             }
         }
         
-        start_ptr
+        Ok(start_ptr)
         
-        });
+        })?;
         
         let head: [std::cell::UnsafeCell<Option<std::ptr::NonNull<Block>>>; N] = std::array::from_fn(|i| {
             std::cell::UnsafeCell::new(Some(std::ptr::NonNull::new(starts[i].as_ptr().cast::<Block>()).unwrap()))
         });
         
-        Self {
+        Ok(Self {
             start: starts,
             head,
             block_size,
             aligns,
             layout,
-        }
+        })
         
     }
 }
